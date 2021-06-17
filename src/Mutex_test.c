@@ -23,34 +23,44 @@ void* threadFunc1(BUFFER *buffer)
 	{
 		buffer->size_buff += DELTA;
 		buffer->buff = realloc(buffer->buff, buffer->size_buff);
+		printf("buff size10 = %d \n",buffer->size_buff);
 	}
 	strncpy(buffer->buff + strlen(buffer->buff), "hello", strlen("hello") + 1);
 	if ((strlen(buffer->buff) + 3 * DELTA) < buffer->size_buff)
 	{
 		buffer->size_buff -= DELTA * 2;
 		buffer->buff = realloc(buffer->buff, buffer->size_buff);
+		printf("buff size11 = %d \n",buffer->size_buff);
 	}
 	pthread_mutex_unlock(&mutex);
-	return buffer->buff;
+
 	pthread_exit(0);
 }
 
 void* threadFunc2(BUFFER *buffer)
 {
+	char *str = "15";
+
 	pthread_mutex_lock(&mutex);
-	if (strlen(buffer->buff) + strlen("15") >= buffer->size_buff)
+
+	if (strlen(buffer->buff) + strlen(str) >= buffer->size_buff)
 	{
 		buffer->size_buff += DELTA;
 		buffer->buff = realloc(buffer->buff, buffer->size_buff);
+		printf("buff size20 = %d \n",buffer->size_buff);
 	}
-	strncpy(buffer->buff + strlen(buffer->buff), "hello", strlen("hello") + 1);
+
+	strncpy(buffer->buff + strlen(buffer->buff), str, strlen(str) + 1);
+
 	if ((strlen(buffer->buff) + 3 * DELTA) < buffer->size_buff)
 	{
-		buffer->size_buff -= DELTA * 2;
+		buffer->size_buff -= 2 * DELTA;
 		buffer->buff = realloc(buffer->buff, buffer->size_buff);
+		printf("buff size21 = %d \n",buffer->size_buff);
 	}
+
 	pthread_mutex_unlock(&mutex);
-	return buffer->buff;
+
 	pthread_exit(0);
 }
 
@@ -70,13 +80,20 @@ int main(void)
 
 	// mutex initialization
 	pthread_mutex_init(&mutex, NULL);
-	for (i = 0; i < 5; i++)
+	for (i = 0; i < 100; i++)
 	{
 		result = pthread_create(&thread1, NULL, (void*) threadFunc1, &buffer);
 		if (result != 0)
 		{
 			printf("Error create thread1\n");
 		}
+
+		if(buffer.size_buff >= 4*DELTA)
+		{
+			memset(buffer.buff, 0, buffer.size_buff);
+			printf("buff size30 = %d \n",buffer.size_buff);
+		}
+
 		result = pthread_create(&thread2, NULL, (void*) threadFunc2, &buffer);
 		if (result != 0)
 		{
@@ -87,6 +104,6 @@ int main(void)
 	}
 	// destroy mutex
 	pthread_mutex_destroy(&mutex);
-	printf("%s\n", buffer.buff);
+	printf("Finish %s\n", buffer.buff);
 	return EXIT_SUCCESS;
 }
