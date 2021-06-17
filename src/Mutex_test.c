@@ -88,11 +88,14 @@ int main(void)
 			printf("Error create thread1\n");
 		}
 
+		/*  for tasting memory compression
+		 *
 		if(buffer.size_buff >= 4*DELTA)
 		{
 			memset(buffer.buff, 0, buffer.size_buff);
 			printf("buff size30 = %d \n",buffer.size_buff);
 		}
+		*/
 
 		result = pthread_create(&thread2, NULL, (void*) threadFunc2, &buffer);
 		if (result != 0)
