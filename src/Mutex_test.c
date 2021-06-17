@@ -3,52 +3,82 @@
 #include <string.h>
 #include <pthread.h>
 
+#define DELTA 100
+
 int data = 0;
 
 pthread_mutex_t mutex;
 
-void* threadFunc1(char *str){
+typedef struct _BUFFER
+{
+	char *buff;
+	int size_buff;
+} BUFFER;
+
+void* threadFunc1(BUFFER *buffer)
+{
 	pthread_mutex_lock(&mutex);
-	if (strlen(str)+strlen("hello") >= 100)
+
+	if (strlen(buffer->buff) + strlen("hello") >= buffer->size_buff)
 	{
-		str = realloc(str, 200);
+		buffer->size_buff += DELTA;
+		buffer->buff = realloc(buffer->buff, buffer->size_buff);
 	}
-	strncpy(str+strlen(str),"hello",strlen("hello")+1);
+	strncpy(buffer->buff + strlen(buffer->buff), "hello", strlen("hello") + 1);
+	if ((strlen(buffer->buff) + 3 * DELTA) < buffer->size_buff)
+	{
+		buffer->size_buff -= DELTA * 2;
+		buffer->buff = realloc(buffer->buff, buffer->size_buff);
+	}
 	pthread_mutex_unlock(&mutex);
-	return str;
+	return buffer->buff;
 	pthread_exit(0);
 }
 
-void* threadFunc2(char *str){
+void* threadFunc2(BUFFER *buffer)
+{
 	pthread_mutex_lock(&mutex);
-	if (strlen(str)+strlen("15") >= 100)
+	if (strlen(buffer->buff) + strlen("15") >= buffer->size_buff)
 	{
-		str = realloc(str, 200);
+		buffer->size_buff += DELTA;
+		buffer->buff = realloc(buffer->buff, buffer->size_buff);
 	}
-	strncpy(&str[strlen(str)],"15",strlen("15")+1);
+	strncpy(buffer->buff + strlen(buffer->buff), "hello", strlen("hello") + 1);
+	if ((strlen(buffer->buff) + 3 * DELTA) < buffer->size_buff)
+	{
+		buffer->size_buff -= DELTA * 2;
+		buffer->buff = realloc(buffer->buff, buffer->size_buff);
+	}
 	pthread_mutex_unlock(&mutex);
+	return buffer->buff;
 	pthread_exit(0);
 }
 
-int main(void) {
+int main(void)
+{
 	int i = 0;
 	int result = 0;
 	pthread_t thread1;
 	pthread_t thread2;
-	char *str = (char*)malloc(100);
-	memset(str, 0, 100);
+
+	BUFFER buffer;
+	buffer.buff = NULL;
+	buffer.size_buff = DELTA;
+
+	buffer.buff = (char*) malloc(buffer.size_buff);
+	memset(buffer.buff, 0, buffer.size_buff);
 
 	// mutex initialization
 	pthread_mutex_init(&mutex, NULL);
-	for(i = 0; i < 5; i++)
+	for (i = 0; i < 5; i++)
 	{
-		result = pthread_create(&thread1, NULL, (void*)threadFunc1, str);
-		if ( result != 0)
+		result = pthread_create(&thread1, NULL, (void*) threadFunc1, &buffer);
+		if (result != 0)
 		{
 			printf("Error create thread1\n");
 		}
-		result = pthread_create(&thread2, NULL, (void*)threadFunc2, str);
-		if ( result != 0)
+		result = pthread_create(&thread2, NULL, (void*) threadFunc2, &buffer);
+		if (result != 0)
 		{
 			printf("Error create thread2\n");
 		}
@@ -57,6 +87,6 @@ int main(void) {
 	}
 	// destroy mutex
 	pthread_mutex_destroy(&mutex);
-	printf("%s\n",str);
+	printf("%s\n", buffer.buff);
 	return EXIT_SUCCESS;
 }
